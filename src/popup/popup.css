@@ -1,0 +1,155 @@
+.popup-root {
+  width: 380px;
+  min-height: 520px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.popup-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.popup-logo .logo-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(153, 27, 27, 0.4), rgba(20, 20, 31, 0.8));
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  border-radius: 12px;
+  font-size: 20px;
+}
+
+.popup-logo h1 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(to right, #fff, #fca5a5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.popup-logo p {
+  font-size: 10px;
+  color: #71717a;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.privacy-badge {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #22c55e;
+}
+
+.status-card {
+  padding: 12px;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.status-row .label {
+  color: #71717a;
+}
+
+.status-row .value {
+  color: #d4d4d8;
+  font-weight: 500;
+}
+
+.scan-overview {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.scan-meta .sender {
+  font-size: 12px;
+  color: #d4d4d8;
+  margin: 6px 0 2px;
+}
+
+.scan-meta .trust {
+  font-size: 11px;
+  color: #71717a;
+  margin: 0;
+}
+
+.threats-section {
+  padding: 12px;
+}
+
+.threats-section h3,
+.quick-actions h3,
+.demo-section h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #71717a;
+  margin: 0 0 10px;
+}
+
+.no-threats {
+  font-size: 12px;
+  color: #22c55e;
+  margin: 0;
+}
+
+.quick-actions {
+  padding: 12px;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.demo-section {
+  padding: 12px;
+}
+
+.popup-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #52525b;
+  padding-top: 4px;
+}
+
+.popup-footer a {
+  color: #dc2626;
+  text-decoration: none;
+}
+
+.popup-footer a:hover {
+  text-decoration: underline;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.mt-3 {
+  margin-top: 12px;
+}
