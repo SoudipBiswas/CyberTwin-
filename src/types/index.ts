@@ -48,6 +48,25 @@ export interface ThreatIntelResult {
   details: string;
 }
 
+export interface LinkIntel {
+  url: string;
+  expandedUrl?: string;
+  isRedirected: boolean;
+  isTyposquat: boolean;
+  isSuspiciousTld: boolean;
+  isShortener: boolean;
+  isRiskyDomain: boolean;
+  trustScore: number;
+}
+
+export interface QRIntel {
+  detected: boolean;
+  decodedUrl?: string;
+  riskScore: number;
+  riskLevel: RiskLevel;
+  details?: string;
+}
+
 export interface ScanResult {
   id: string;
   timestamp: number;
@@ -62,7 +81,32 @@ export interface ScanResult {
   threatIntel: ThreatIntelResult[];
   scrubbedPreview: string;
   demoCaseId?: string;
+  trustScore: number;
+  subScores: {
+    identityTrust: number;
+    intentRisk: number;
+    manipulationRisk: number;
+    websiteRisk: number;
+    financialRisk: number;
+    privacyRisk: number;
+    confidenceScore: number;
+  };
+  socialEngineering: {
+    urgency: 'low' | 'medium' | 'high';
+    fear: 'low' | 'medium' | 'high';
+    authority: 'low' | 'medium' | 'high';
+    scarcity: 'low' | 'medium' | 'high';
+    curiosity: 'low' | 'medium' | 'high';
+    credentialRequests: 'low' | 'medium' | 'high';
+    financialRequests: 'low' | 'medium' | 'high';
+    emotionalManipulation: 'low' | 'medium' | 'high';
+  };
+  reasoningBullets: string[];
+  linkIntel: LinkIntel[];
+  qrIntel?: QRIntel;
+  contextualAnomalies: string[];
 }
+
 
 export interface BehaviorProfile {
   knownSenders: Record<
@@ -124,14 +168,37 @@ export interface RiskAggregation {
   topReasons: string[];
   recommendedAction: string;
   senderTrustScore: number;
+  trustScore: number;
+  subScores: {
+    identityTrust: number;
+    intentRisk: number;
+    manipulationRisk: number;
+    websiteRisk: number;
+    financialRisk: number;
+    privacyRisk: number;
+    confidenceScore: number;
+  };
+  socialEngineering: {
+    urgency: 'low' | 'medium' | 'high';
+    fear: 'low' | 'medium' | 'high';
+    authority: 'low' | 'medium' | 'high';
+    scarcity: 'low' | 'medium' | 'high';
+    curiosity: 'low' | 'medium' | 'high';
+    credentialRequests: 'low' | 'medium' | 'high';
+    financialRequests: 'low' | 'medium' | 'high';
+    emotionalManipulation: 'low' | 'medium' | 'high';
+  };
+  reasoningBullets: string[];
 }
+
 
 export interface TrustGraphNode {
   id: string;
   label: string;
-  type: 'user' | 'sender' | 'domain' | 'link' | 'attachment' | 'risk';
+  type: 'user' | 'sender' | 'domain' | 'link' | 'attachment' | 'risk' | 'qr' | 'language' | 'behavior' | 'threatintel';
   riskScore?: number;
 }
+
 
 export interface TrustGraphEdge {
   from: string;

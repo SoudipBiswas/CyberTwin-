@@ -24,7 +24,23 @@ async function performScan(email: EmailData): Promise<ScanResult> {
   }
 
   const response = await apiClient.analyze(input);
-  const result = response.result ?? (await runLocalAnalysis(input));
+  let result = response.result ?? (await runLocalAnalysis(input));
+
+  // Merge local calculations to guarantee dashboard properties exist
+  if (!result.subScores || !result.socialEngineering || !result.linkIntel) {
+    const local = await runLocalAnalysis(input);
+    result = {
+      ...result,
+      trustScore: local.trustScore ?? 100 - result.riskScore,
+      subScores: result.subScores ?? local.subScores,
+      socialEngineering: result.socialEngineering ?? local.socialEngineering,
+      reasoningBullets: result.reasoningBullets ?? local.reasoningBullets,
+      linkIntel: result.linkIntel ?? local.linkIntel,
+      qrIntel: result.qrIntel ?? local.qrIntel,
+      contextualAnomalies: result.contextualAnomalies ?? local.contextualAnomalies,
+    };
+  }
+
   await storageService.addScanResult(result);
   return result;
 }

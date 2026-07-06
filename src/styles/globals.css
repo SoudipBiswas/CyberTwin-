@@ -26,7 +26,7 @@
   }
 
   .btn-primary {
-    @apply px-4 py-2 rounded-xl bg-gradient-to-r from-cyber-red-deep to-cyber-red
+    @apply px-4 py-2 rounded-xl bg-gradient-to-r from-cyber-blue-deep to-cyber-cyan
       text-white font-semibold text-sm transition-all duration-300
       hover:shadow-glow hover:scale-[1.02] active:scale-[0.98];
   }
@@ -34,12 +34,12 @@
   .btn-secondary {
     @apply px-4 py-2 rounded-xl border border-cyber-border bg-cyber-dark/60
       text-zinc-200 font-medium text-sm transition-all duration-300
-      hover:border-cyber-red/50 hover:bg-cyber-dark;
+      hover:border-cyber-cyan/50 hover:bg-cyber-dark;
   }
 
   .input-cyber {
     @apply w-full px-3 py-2 rounded-xl bg-cyber-darker border border-cyber-border
-      text-white text-sm focus:outline-none focus:border-cyber-red/60 focus:shadow-glow
+      text-white text-sm focus:outline-none focus:border-cyber-cyan/60 focus:shadow-glow
       transition-all duration-200;
   }
 
@@ -65,6 +65,6 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #991b1b;
+  background: #06b6d4;
   border-radius: 3px;
 }

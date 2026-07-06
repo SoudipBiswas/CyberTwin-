@@ -15,7 +15,12 @@ export default {
           orange: '#f97316',
           green: '#22c55e',
           muted: '#71717a',
-          border: 'rgba(220, 38, 38, 0.25)',
+          border: 'rgba(6, 182, 212, 0.25)',
+          cyan: '#06b6d4',
+          'cyan-glow': '#22d3ee',
+          blue: '#2563eb',
+          'blue-glow': '#3b82f6',
+          'blue-deep': '#1d4ed8',
         },
       },
       fontFamily: {
@@ -23,8 +28,9 @@ export default {
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
       },
       boxShadow: {
-        glow: '0 0 20px rgba(220, 38, 38, 0.35)',
-        'glow-lg': '0 0 40px rgba(220, 38, 38, 0.45)',
+        glow: '0 0 20px rgba(6, 182, 212, 0.35)',
+        'glow-lg': '0 0 40px rgba(6, 182, 212, 0.45)',
+        'glow-blue': '0 0 20px rgba(37, 99, 235, 0.35)',
         'glow-green': '0 0 20px rgba(34, 197, 94, 0.35)',
         'glow-orange': '0 0 20px rgba(249, 115, 22, 0.35)',
         glass: '0 8px 32px rgba(0, 0, 0, 0.45)',
@@ -50,7 +56,7 @@ export default {
       },
       backgroundImage: {
         'cyber-grid':
-          'linear-gradient(rgba(220,38,38,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(220,38,38,0.04) 1px, transparent 1px)',
+          'linear-gradient(rgba(6,182,212,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,0.04) 1px, transparent 1px)',
       },
       backgroundSize: {
         grid: '24px 24px',

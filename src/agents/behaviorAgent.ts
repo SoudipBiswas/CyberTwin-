@@ -19,6 +19,17 @@ export function analyzeBehavior(input: AnalysisInput): AgentFinding[] {
   const domain = email.senderDomain.toLowerCase();
   const requestTypes = detectRequestTypes(email);
 
+  if ((email as any).isSpam === true) {
+    findings.push({
+      agent: 'BehaviorAgent',
+      category: 'gmail_spam',
+      severity: 'high',
+      score: 40,
+      title: 'Gmail classified this message as spam',
+      description: 'This email is located in the Spam folder or contains spam indicators.',
+    });
+  }
+
   const isTrustedContact = trustedContacts.includes(senderKey);
   const isTrustedDomain = trustedDomains.includes(domain);
   const knownSender = behaviorProfile.knownSenders[senderKey];
@@ -128,6 +139,57 @@ export function analyzeBehavior(input: AnalysisInput): AgentFinding[] {
   }
 
   return findings;
+}
+
+export function analyzeContextualAnomalies(input: AnalysisInput): string[] {
+  const anomalies: string[] = [];
+  const { email, behaviorProfile } = input;
+  const senderKey = email.senderEmail.toLowerCase();
+  const knownSender = behaviorProfile.knownSenders[senderKey];
+  const requestTypes = detectRequestTypes(email);
+
+  if (!knownSender) {
+    anomalies.push(`No communication history exists for ${email.senderName || email.senderEmail}.`);
+    if (requestTypes.some((t) => ['payment', 'credential'].includes(t))) {
+      anomalies.push(`Critical: Sender requested ${requestTypes.join('/')} credentials or money during first contact.`);
+    }
+    return anomalies;
+  }
+
+  // 1. New payment request
+  if (requestTypes.includes('payment') && !(knownSender.requestTypes || []).includes('payment')) {
+    anomalies.push(`First-time payment request: ${email.senderName} has never requested wire transfers or payments in prior interactions.`);
+  }
+
+  // 2. New credentials request
+  if (requestTypes.includes('credential') && !(knownSender.requestTypes || []).includes('credential')) {
+    anomalies.push(`First-time credentials check: ${email.senderName} is asking for sensitive login details, which is atypical.`);
+  }
+
+  // 3. Tone mismatch / Unusual urgency
+  if (requestTypes.includes('urgent')) {
+    const usualTone = knownSender.usualTone || 'neutral';
+    if (usualTone === 'neutral' || usualTone === 'formal') {
+      anomalies.push(`Unusual communication tone: Sender usually communicates with a calm/formal style, but this message indicates unexpected urgency.`);
+    }
+  }
+
+  // 4. Unexpected attachments
+  if (email.attachments.length > 0) {
+    const hasExecutable = email.attachments.some(a => /\.(exe|bat|cmd|vbs|js|docm|xlsm)$/i.test(a));
+    if (hasExecutable) {
+      anomalies.push(`Dangerous file attachment: Known contact has sent a macro/executable file which violates safety baselines.`);
+    } else {
+      anomalies.push(`Unexpected attachments: Email contains documents (${email.attachments.join(', ')}) from a sender who rarely shares files.`);
+    }
+  }
+
+  // 5. Writing style / time of day anomalies
+  if (email.subject.includes('URGENT') && !knownSender.email.includes('alerts')) {
+    anomalies.push(`Writing style deviation: Subject line uses capitalization emphasis inconsistent with previous notes.`);
+  }
+
+  return anomalies;
 }
 
 export function updateBehaviorProfile(

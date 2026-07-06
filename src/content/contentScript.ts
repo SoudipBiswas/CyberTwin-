@@ -82,52 +82,57 @@ async function runScan(): Promise<void> {
   }
 }
 
-// Register listener immediately at top-level to ensure it starts automatically
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === 'TRIGGER_SCAN') {
-    runScan().then(() => sendResponse({ success: true }));
-    return true;
-  }
-  if (message.type === 'SHOW_PANEL') {
-    showPanel(false);
-    sendResponse({ success: true });
-    return true;
-  }
-  if (message.type === 'CYBERTWIN_SCAN_PAGE') {
-    if (isGmail()) {
-      const gmailData = extractGmailEmail();
-      if (gmailData) {
-        sendResponse({ success: true, email: gmailData });
-      } else {
-        sendResponse({ success: false, reason: 'No email opened' });
-      }
-    } else {
-      sendResponse({ success: false, reason: 'Only Gmail is supported' });
+if (!(window as any).__cybertwinMessageListenerInstalled) {
+  (window as any).__cybertwinMessageListenerInstalled = true;
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message.type === 'TRIGGER_SCAN') {
+      runScan().then(() => sendResponse({ success: true }));
+      return true;
     }
-    return true;
-  }
-  if (message.type === 'CYBERTWIN_GET_PAGE_DATA') {
-    // Return raw page data without triggering a scan
-    if (isGmail()) {
-      const gmailData = extractGmailEmail();
-      if (gmailData) {
-        sendResponse({
-          success: true,
-          source: 'gmail',
-          data: gmailData,
-        });
-      } else {
-        sendResponse({ success: false, reason: 'No email opened' });
-      }
-    } else {
-      sendResponse({ success: false, reason: 'Only Gmail is supported' });
+    if (message.type === 'SHOW_PANEL') {
+      showPanel(false);
+      sendResponse({ success: true });
+      return true;
     }
-    return true;
-  }
-  return false;
-});
+    if (message.type === 'CYBERTWIN_SCAN_PAGE') {
+      if (isGmail()) {
+        const gmailData = extractGmailEmail();
+        if (gmailData) {
+          sendResponse({ success: true, email: gmailData });
+        } else {
+          sendResponse({ success: false, reason: 'Open an email first to scan' });
+        }
+      } else {
+        sendResponse({ success: false, reason: 'Only Gmail is supported' });
+      }
+      return true;
+    }
+    if (message.type === 'CYBERTWIN_GET_PAGE_DATA') {
+      // Return raw page data without triggering a scan
+      if (isGmail()) {
+        const gmailData = extractGmailEmail();
+        if (gmailData) {
+          sendResponse({
+            success: true,
+            source: 'gmail',
+            data: gmailData,
+          });
+        } else {
+          sendResponse({ success: false, reason: 'Open an email first to scan' });
+        }
+      } else {
+        sendResponse({ success: false, reason: 'Only Gmail is supported' });
+      }
+      return true;
+    }
+    return false;
+  });
+}
 
 function init(): void {
+  if ((window as any).__cybertwinInitRun) return;
+  (window as any).__cybertwinInitRun = true;
+
   injectPanelStyles();
 
   if (isGmail()) {

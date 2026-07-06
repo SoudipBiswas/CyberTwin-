@@ -6,12 +6,16 @@ interface TrustGraphProps {
 }
 
 const NODE_COLORS: Record<string, string> = {
-  user: '#22c55e',
-  sender: '#dc2626',
-  domain: '#f97316',
-  link: '#eab308',
-  attachment: '#a855f7',
-  risk: '#ef4444',
+  user: '#22c55e',       // green
+  sender: '#2563eb',     // blue
+  domain: '#06b6d4',     // cyan
+  link: '#eab308',       // yellow
+  attachment: '#a855f7', // purple
+  risk: '#06b6d4',       // cyan
+  qr: '#f97316',         // orange
+  language: '#8b5cf6',   // violet
+  behavior: '#10b981',   // emerald
+  threatintel: '#ef4444' // red
 };
 
 export function TrustGraph({ graph }: TrustGraphProps) {
@@ -23,8 +27,11 @@ export function TrustGraph({ graph }: TrustGraphProps) {
     user: 0,
     sender: 1,
     domain: 1,
+    language: 2,
+    behavior: 2,
     link: 2,
     attachment: 2,
+    qr: 2,
     risk: 3,
   };
 
@@ -46,10 +53,10 @@ export function TrustGraph({ graph }: TrustGraphProps) {
   });
 
   return (
-    <div className="glass-card p-4 overflow-hidden">
+    <div className="glass-card p-4 overflow-hidden border border-cyan-500/25">
       <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-cyber-red animate-pulse" />
-        Digital Trust Graph
+        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+        Digital Trust Graph Model
       </h3>
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
         <defs>
@@ -73,7 +80,7 @@ export function TrustGraph({ graph }: TrustGraphProps) {
                 y1={from.y}
                 x2={to.x}
                 y2={to.y}
-                stroke="rgba(220,38,38,0.25)"
+                stroke="rgba(6,182,212,0.25)"
                 strokeWidth="1.5"
                 strokeDasharray="4 4"
               />
@@ -81,9 +88,10 @@ export function TrustGraph({ graph }: TrustGraphProps) {
                 <text
                   x={(from.x + to.x) / 2}
                   y={(from.y + to.y) / 2 - 4}
-                  fill="rgba(161,161,170,0.6)"
-                  fontSize="8"
+                  fill="rgba(34,211,238,0.4)"
+                  fontSize="7"
                   textAnchor="middle"
+                  className="font-mono"
                 >
                   {edge.label}
                 </text>
@@ -105,14 +113,14 @@ export function TrustGraph({ graph }: TrustGraphProps) {
                 cy={pos.y}
                 r={node.type === 'user' ? 22 : 18}
                 fill="rgba(10,10,15,0.9)"
-                stroke={riskLevel ? levelColor(riskLevel) : color}
+                stroke={node.type === 'risk' ? '#22d3ee' : (riskLevel ? levelColor(riskLevel) : color)}
                 strokeWidth="2"
               />
               <text
                 x={pos.x}
-                y={pos.y + 32}
+                y={pos.y + 30}
                 fill="#a1a1aa"
-                fontSize="9"
+                fontSize="8"
                 textAnchor="middle"
                 className="font-mono"
               >
@@ -120,13 +128,14 @@ export function TrustGraph({ graph }: TrustGraphProps) {
               </text>
               <text
                 x={pos.x}
-                y={pos.y + 4}
+                y={pos.y + 3}
                 fill="white"
-                fontSize="8"
+                fontSize="7"
                 textAnchor="middle"
                 fontWeight="600"
+                className="font-mono"
               >
-                {node.type.toUpperCase().slice(0, 3)}
+                {node.type.toUpperCase().slice(0, 4)}
               </text>
             </g>
           );

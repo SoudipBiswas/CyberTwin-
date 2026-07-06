@@ -33,6 +33,14 @@ const PATTERNS = {
     /\b(please help|i need your help|trust me|you are the only one)\b/gi,
     /\b(emergency|family emergency|personal favor)\b/gi,
   ],
+  scarcity: [
+    /\b(limited slots|only \d+ left|first come first served|exclusive offer|while supplies last|limited time|last slots)\b/gi,
+    /\b(hurry up|only a few spaces)\b/gi,
+  ],
+  curiosity: [
+    /\b(guess what|you won't believe|is this you|check this out|private photo|are you in this|secret link|confidential leak)\b/gi,
+    /\b(exclusive photo|unbelievable video|someone is talking about you)\b/gi,
+  ],
 };
 
 function matchPatterns(text: string, patterns: RegExp[]): string[] {
@@ -61,9 +69,11 @@ export function analyzeLanguage(email: EmailData): AgentFinding[] {
     { key: 'passwordRequest', category: 'credential_request', score: 25, severity: 'critical', title: 'Password or credential request' },
     { key: 'paymentRequest', category: 'payment_request', score: 20, severity: 'high', title: 'Payment or financial request' },
     { key: 'credentialRequest', category: 'credential_request', score: 25, severity: 'critical', title: 'Sensitive credential harvesting pattern' },
-    { key: 'impersonation', category: 'impersonation', score: 20, severity: 'high', title: 'Possible impersonation' },
+    { key: 'impersonation', category: 'authority_pressure', score: 20, severity: 'high', title: 'Possible impersonation / authority claims' },
     { key: 'authorityPressure', category: 'authority_pressure', score: 15, severity: 'medium', title: 'Authority or policy pressure' },
     { key: 'emotionalManipulation', category: 'emotional_manipulation', score: 10, severity: 'medium', title: 'Emotional manipulation tactics' },
+    { key: 'scarcity', category: 'scarcity', score: 12, severity: 'medium', title: 'Scarcity language detected' },
+    { key: 'curiosity', category: 'curiosity', score: 12, severity: 'medium', title: 'Curiosity baiting detected' },
   ];
 
   for (const check of checks) {

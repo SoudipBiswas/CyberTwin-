@@ -1,7 +1,29 @@
-import { defineConfig } from 'vite';
+import { defineConfig, build } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import { copyFileSync, mkdirSync, existsSync } from 'fs';
+
+function buildContentScript() {
+  return {
+    name: 'build-content-script',
+    apply: 'build',
+    async closeBundle() {
+      await build({
+        configFile: false,
+        build: {
+          emptyOutDir: false,
+          outDir: 'dist',
+          lib: {
+            entry: resolve(__dirname, 'src/content/contentScript.ts'),
+            name: 'CyberTwinContent',
+            formats: ['iife'],
+            fileName: () => 'content/contentScript.js',
+          },
+        },
+      });
+    },
+  };
+}
 
 function copyManifestPlugin() {
   return {
@@ -28,7 +50,7 @@ function copyManifestPlugin() {
 
 export default defineConfig({
   base: './',
-  plugins: [react(), copyManifestPlugin()],
+  plugins: [react(), buildContentScript(), copyManifestPlugin()],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
@@ -43,12 +65,10 @@ export default defineConfig({
         options: resolve(__dirname, 'options.html'),
         dashboard: resolve(__dirname, 'dashboard.html'),
         background: resolve(__dirname, 'src/background/serviceWorker.ts'),
-        content: resolve(__dirname, 'src/content/contentScript.ts'),
       },
       output: {
         entryFileNames: (chunk) => {
           if (chunk.name === 'background') return 'background/serviceWorker.js';
-          if (chunk.name === 'content') return 'content/contentScript.js';
           return 'assets/[name].js';
         },
         chunkFileNames: 'assets/chunks/[name]-[hash].js',
