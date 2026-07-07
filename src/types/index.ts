@@ -30,6 +30,7 @@ export interface EmailData {
   attachments: string[];
   timestamp: string;
   pageUrl: string;
+  isSpam?: boolean;
 }
 
 export interface AgentFinding {
@@ -48,15 +49,161 @@ export interface ThreatIntelResult {
   details: string;
 }
 
+export interface TrustScoreFactor {
+  label: string;
+  delta: number;
+  evidence?: string;
+  source: string;
+}
+
+export interface CyberTwinMemoryRecord {
+  key: string;
+  kind: 'sender' | 'domain';
+  organization?: string;
+  firstSeen: number;
+  lastSeen: number;
+  interactionCount: number;
+  numberOfInteractions?: number;
+  averageTrustScore: number;
+  averageRiskScore?: number;
+  previousRiskLevels: RiskLevel[];
+  commonCommunicationPatterns?: string[];
+  previouslyDetectedAttacks?: string[];
+  userVerdict?: 'trusted' | 'unsafe';
+}
+
+export interface CyberTwinMemory {
+  senders: Record<string, CyberTwinMemoryRecord>;
+  domains: Record<string, CyberTwinMemoryRecord>;
+}
+
+export interface CyberTwinMemorySummary {
+  senderStatus: 'known' | 'new';
+  domainStatus: 'known' | 'new';
+  organizationStatus?: 'known' | 'new';
+  senderInteractions: number;
+  domainInteractions: number;
+  senderAverageTrust?: number;
+  domainAverageTrust?: number;
+  averageRiskScore?: number;
+  firstSeen?: number;
+  lastSeen?: number;
+  trustedDomains: string[];
+  knownOrganizations?: string[];
+  commonCommunicationPatterns?: string[];
+  previouslyDetectedAttacks?: string[];
+  userVerdict?: 'trusted' | 'unsafe';
+}
+
+export interface PredictionResult {
+  label:
+    | 'Fake Login Page'
+    | 'Credential Harvesting'
+    | 'Payment Fraud'
+    | 'Malware Download'
+    | 'Invoice Scam'
+    | 'Account Takeover'
+    | 'Brand Impersonation'
+    | 'Benign Interaction';
+  probability: number;
+  reason: string;
+  alternativePossibilities?: Array<{ label: string; probability: number; reason: string }>;
+  confidence?: number;
+}
+
+export interface AttackJourneyStep {
+  label: string;
+  detail: string;
+  severity: 'low' | 'medium' | 'high';
+}
+
+export interface ThreatIntelEstimate {
+  label: 'Local Threat Intelligence Estimate';
+  attackType:
+    | 'Fake shopping'
+    | 'Fake recruiter'
+    | 'Fake banking'
+    | 'Fake invoice'
+    | 'Credential phishing'
+    | 'QR phishing'
+    | 'Malware delivery'
+    | 'Brand impersonation'
+    | 'Low-risk communication';
+  trend: string;
+  countries: string[];
+  threatFamily: string;
+  rationale: string;
+}
+
+export interface ClickSimulation {
+  target: string;
+  riskPercentage: number;
+  steps: string[];
+  reasoning?: string;
+  recommendedAction: string;
+}
+
+export interface TrustReplayStep {
+  id: string;
+  label: string;
+  checked: string;
+  result: string;
+  evidence: string[];
+  confidence: number;
+  timeTakenMs: number;
+  status: 'passed' | 'warning' | 'failed' | 'skipped';
+  failureReason?: string;
+}
+
+export interface ConfidenceAssessment {
+  aiConfidence: number;
+  evidenceQuality: 'Low' | 'Medium' | 'High';
+  reasoningReliability: 'Low' | 'Medium' | 'High' | 'Very High';
+  signalAgreement: number;
+  summary: string;
+}
+
+export interface ScoreEvidence {
+  score: number;
+  evidence: string[];
+}
+
+export interface AttackKnowledge {
+  attackName: string;
+  description: string;
+  mitreAttackMapping: string[];
+  owaspMapping: string[];
+  typicalGoal: string;
+  howToStaySafe: string;
+}
+
+export interface HeatmapHighlight {
+  text: string;
+  category:
+    | 'Urgency'
+    | 'Credential Harvesting'
+    | 'Authority Abuse'
+    | 'Scarcity'
+    | 'Fear'
+    | 'Social Engineering'
+    | 'Financial Pressure';
+  severity: 'green' | 'yellow' | 'orange' | 'red';
+  explanation: string;
+}
+
 export interface LinkIntel {
   url: string;
   expandedUrl?: string;
   isRedirected: boolean;
   isTyposquat: boolean;
+  isHomograph: boolean;
   isSuspiciousTld: boolean;
   isShortener: boolean;
+  isNewDomain: boolean;
+  hasSuspiciousParameters: boolean;
   isRiskyDomain: boolean;
   trustScore: number;
+  reasons: string[];
 }
 
 export interface QRIntel {
@@ -65,6 +212,17 @@ export interface QRIntel {
   riskScore: number;
   riskLevel: RiskLevel;
   details?: string;
+}
+
+export interface PrivacyLedger {
+  rawEmailBodyStored: false;
+  storedBodyText: 'scrubbed_preview_150_chars';
+  scrubbedPreviewLength: number;
+  storedFields: string[];
+  strippedFields: string[];
+  linkStorage: 'domain_summary_only';
+  createdAt: number;
+  note: string;
 }
 
 export interface ScanResult {
@@ -91,6 +249,15 @@ export interface ScanResult {
     privacyRisk: number;
     confidenceScore: number;
   };
+  scoreEvidence: {
+    identityTrust: ScoreEvidence;
+    intentRisk: ScoreEvidence;
+    manipulationRisk: ScoreEvidence;
+    websiteTrust: ScoreEvidence;
+    contextTrust: ScoreEvidence;
+    overallTrust: ScoreEvidence;
+  };
+  confidenceAssessment: ConfidenceAssessment;
   socialEngineering: {
     urgency: 'low' | 'medium' | 'high';
     fear: 'low' | 'medium' | 'high';
@@ -105,6 +272,16 @@ export interface ScanResult {
   linkIntel: LinkIntel[];
   qrIntel?: QRIntel;
   contextualAnomalies: string[];
+  trustBreakdown: TrustScoreFactor[];
+  memorySummary: CyberTwinMemorySummary;
+  prediction: PredictionResult;
+  attackJourney: AttackJourneyStep[];
+  threatIntelEstimate: ThreatIntelEstimate;
+  clickSimulation: ClickSimulation;
+  replayTimeline: TrustReplayStep[];
+  heatmapHighlights: HeatmapHighlight[];
+  attackKnowledge: AttackKnowledge;
+  privacyLedger?: PrivacyLedger;
 }
 
 
@@ -149,6 +326,7 @@ export interface StorageData {
   trustedContacts: string[];
   trustedDomains: string[];
   behaviorProfile: BehaviorProfile;
+  trustMemory: CyberTwinMemory;
   scanHistory: ScanResult[];
   latestScan: ScanResult | null;
 }
@@ -159,6 +337,7 @@ export interface AnalysisInput {
   trustedContacts: string[];
   trustedDomains: string[];
   behaviorProfile: BehaviorProfile;
+  trustMemory: CyberTwinMemory;
 }
 
 export interface RiskAggregation {
@@ -189,13 +368,14 @@ export interface RiskAggregation {
     emotionalManipulation: 'low' | 'medium' | 'high';
   };
   reasoningBullets: string[];
+  trustBreakdown: TrustScoreFactor[];
 }
 
 
 export interface TrustGraphNode {
   id: string;
   label: string;
-  type: 'user' | 'sender' | 'domain' | 'link' | 'attachment' | 'risk' | 'qr' | 'language' | 'behavior' | 'threatintel';
+  type: 'user' | 'sender' | 'organization' | 'domain' | 'link' | 'attachment' | 'risk' | 'qr' | 'language' | 'behavior' | 'context' | 'threatintel' | 'reasoning';
   riskScore?: number;
 }
 
@@ -245,11 +425,17 @@ export const DEFAULT_BEHAVIOR_PROFILE: BehaviorProfile = {
   communicationFrequency: {},
 };
 
+export const DEFAULT_TRUST_MEMORY: CyberTwinMemory = {
+  senders: {},
+  domains: {},
+};
+
 export const DEFAULT_STORAGE: StorageData = {
   settings: DEFAULT_SETTINGS,
   trustedContacts: [],
   trustedDomains: [],
   behaviorProfile: DEFAULT_BEHAVIOR_PROFILE,
+  trustMemory: DEFAULT_TRUST_MEMORY,
   scanHistory: [],
   latestScan: null,
 };

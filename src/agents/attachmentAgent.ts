@@ -49,7 +49,7 @@ export function analyzeAttachments(email: EmailData): AgentFinding[] {
         category: 'executable',
         severity: 'critical',
         score: 20,
-        title: 'Dangerous file extension',
+        title: 'High-risk file extension',
         description: 'Attachment has an executable or macro-enabled extension.',
         evidence: filename,
       });

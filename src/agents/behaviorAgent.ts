@@ -14,10 +14,12 @@ function detectRequestTypes(email: EmailData): string[] {
 
 export function analyzeBehavior(input: AnalysisInput): AgentFinding[] {
   const findings: AgentFinding[] = [];
-  const { email, behaviorProfile, trustedContacts, trustedDomains } = input;
+  const { email, behaviorProfile, trustedContacts, trustedDomains, trustMemory } = input;
   const senderKey = email.senderEmail.toLowerCase();
   const domain = email.senderDomain.toLowerCase();
   const requestTypes = detectRequestTypes(email);
+  const senderMemory = trustMemory.senders[senderKey];
+  const domainMemory = trustMemory.domains[domain];
 
   if ((email as any).isSpam === true) {
     findings.push({
@@ -35,7 +37,7 @@ export function analyzeBehavior(input: AnalysisInput): AgentFinding[] {
   const knownSender = behaviorProfile.knownSenders[senderKey];
   const knownDomain = behaviorProfile.knownDomains[domain];
 
-  if (!knownSender && !isTrustedContact) {
+  if (!knownSender && !senderMemory && !isTrustedContact) {
     findings.push({
       agent: 'BehaviorAgent',
       category: 'new_sender',
@@ -47,7 +49,7 @@ export function analyzeBehavior(input: AnalysisInput): AgentFinding[] {
     });
   }
 
-  if (!knownDomain && !isTrustedDomain && domain) {
+  if (!knownDomain && !domainMemory && !isTrustedDomain && domain) {
     findings.push({
       agent: 'BehaviorAgent',
       category: 'new_domain',
@@ -80,6 +82,42 @@ export function analyzeBehavior(input: AnalysisInput): AgentFinding[] {
       title: 'Trusted domain',
       description: 'Sender domain is on your trusted domains list.',
       evidence: domain,
+    });
+  }
+
+  if (senderMemory?.userVerdict === 'unsafe' || domainMemory?.userVerdict === 'unsafe') {
+    findings.push({
+      agent: 'BehaviorAgent',
+      category: 'user_marked_unsafe',
+      severity: 'high',
+      score: 35,
+      title: 'Previously marked unsafe',
+      description: 'You previously marked this sender or domain as unsafe in CyberTwin memory.',
+      evidence: senderMemory?.userVerdict === 'unsafe' ? email.senderEmail : domain,
+    });
+  }
+
+  if (!isTrustedContact && !isTrustedDomain && senderMemory && senderMemory.averageTrustScore >= 80 && senderMemory.interactionCount >= 2) {
+    findings.push({
+      agent: 'BehaviorAgent',
+      category: 'known_safe_sender',
+      severity: 'low',
+      score: -12,
+      title: 'Positive CyberTwin memory',
+      description: 'Previous scans of this sender produced consistently high trust scores.',
+      evidence: `${senderMemory.interactionCount} prior interactions, avg trust ${senderMemory.averageTrustScore}`,
+    });
+  }
+
+  if (!isTrustedDomain && domainMemory && domainMemory.averageTrustScore >= 80 && domainMemory.interactionCount >= 2) {
+    findings.push({
+      agent: 'BehaviorAgent',
+      category: 'known_safe_domain',
+      severity: 'low',
+      score: -10,
+      title: 'Known trusted domain pattern',
+      description: 'CyberTwin memory has seen this domain before with high trust.',
+      evidence: `${domainMemory.interactionCount} prior interactions, avg trust ${domainMemory.averageTrustScore}`,
     });
   }
 
@@ -178,7 +216,7 @@ export function analyzeContextualAnomalies(input: AnalysisInput): string[] {
   if (email.attachments.length > 0) {
     const hasExecutable = email.attachments.some(a => /\.(exe|bat|cmd|vbs|js|docm|xlsm)$/i.test(a));
     if (hasExecutable) {
-      anomalies.push(`Dangerous file attachment: Known contact has sent a macro/executable file which violates safety baselines.`);
+      anomalies.push(`High-risk file attachment: Known contact has sent a macro/executable file which violates safety baselines.`);
     } else {
       anomalies.push(`Unexpected attachments: Email contains documents (${email.attachments.join(', ')}) from a sender who rarely shares files.`);
     }

@@ -3,26 +3,46 @@ export function extractDomain(emailOrUrl: string): string {
 
   if (emailOrUrl.includes('@')) {
     const parts = emailOrUrl.split('@');
-    return (parts[parts.length - 1] || '').toLowerCase().trim();
+    return normalizeHostname(parts[parts.length - 1] || '');
   }
 
   try {
     const url = emailOrUrl.startsWith('http')
       ? new URL(emailOrUrl)
       : new URL(`https://${emailOrUrl}`);
-    return url.hostname.replace(/^www\./, '').toLowerCase();
+    return normalizeHostname(url.hostname);
   } catch {
-    return emailOrUrl.toLowerCase().trim();
+    return normalizeHostname(emailOrUrl);
   }
 }
 
 export function extractDomainFromUrl(url: string): string {
   try {
-    const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
-    return parsed.hostname.replace(/^www\./, '').toLowerCase();
+    const parsed = new URL(hasScheme(url) ? url : `https://${url}`);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return '';
+    return normalizeHostname(parsed.hostname);
   } catch {
     return '';
   }
+}
+
+export function normalizeHostname(hostname: string): string {
+  return hostname
+    .trim()
+    .replace(/^mailto:/i, '')
+    .replace(/^www\./i, '')
+    .replace(/[<>"'()[\],;]+/g, '')
+    .toLowerCase();
+}
+
+export function hasScheme(value: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:/i.test(value);
+}
+
+export function hasHomographSignal(domain: string): boolean {
+  if (!domain) return false;
+  if (domain.includes('xn--')) return true;
+  return /[^\u0000-\u007f]/.test(domain);
 }
 
 const SUSPICIOUS_TLDS = new Set([

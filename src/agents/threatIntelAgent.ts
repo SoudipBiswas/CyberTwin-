@@ -1,7 +1,7 @@
 import type { EmailData, ThreatIntelResult } from '../types';
 import { extractDomainFromUrl } from '../utils/domainUtils';
 
-function mockVirusTotal(url: string): ThreatIntelResult {
+function estimateVirusTotal(url: string): ThreatIntelResult {
   const suspicious =
     url.includes('bit.ly') ||
     url.includes('.xyz') ||
@@ -11,23 +11,23 @@ function mockVirusTotal(url: string): ThreatIntelResult {
     source: 'VirusTotal',
     status: suspicious ? 'suspicious' : 'clean',
     details: suspicious
-      ? 'Mock: 3/70 engines flagged this URL (demo mode)'
-      : 'Mock: 0/70 engines flagged this URL (demo mode)',
+      ? 'Local estimate: multiple reputation heuristics flagged this URL pattern.'
+      : 'Local estimate: no reputation heuristic flagged this URL pattern.',
   };
 }
 
-function mockUrlscan(url: string): ThreatIntelResult {
+function estimateUrlscan(url: string): ThreatIntelResult {
   const malicious = url.startsWith('http://') && url.includes('login');
   return {
     source: 'urlscan.io',
     status: malicious ? 'malicious' : 'unknown',
     details: malicious
-      ? 'Mock: Phishing landing page pattern detected (demo mode)'
-      : 'Mock: No malicious behavior observed (demo mode)',
+      ? 'Local estimate: phishing landing page pattern detected.'
+      : 'Local estimate: no malicious landing-page behavior inferred.',
   };
 }
 
-function mockSafeBrowsing(url: string): ThreatIntelResult {
+function estimateSafeBrowsing(url: string): ThreatIntelResult {
   const domain = extractDomainFromUrl(url);
   const flagged = ['paypa1-verify.com', 'dhl-delivery.top', 'invoice-paymnt.xyz'].some(
     (d) => domain.includes(d.split('.')[0])
@@ -36,16 +36,16 @@ function mockSafeBrowsing(url: string): ThreatIntelResult {
     source: 'Google Safe Browsing',
     status: flagged ? 'malicious' : 'clean',
     details: flagged
-      ? 'Mock: URL matches social engineering blocklist (demo mode)'
-      : 'Mock: No Safe Browsing warnings (demo mode)',
+      ? 'Local estimate: URL resembles a known social-engineering campaign pattern.'
+      : 'Local estimate: no Safe Browsing-style warning inferred.',
   };
 }
 
-function mockAbuseIPDB(_url: string): ThreatIntelResult {
+function estimateAbuseIPDB(_url: string): ThreatIntelResult {
   return {
     source: 'AbuseIPDB',
     status: 'unknown',
-    details: 'Mock: IP reputation check placeholder (demo mode)',
+    details: 'Local estimate: IP reputation is unavailable from browser-only analysis.',
   };
 }
 
@@ -63,10 +63,10 @@ export function analyzeThreatIntel(email: EmailData): ThreatIntelResult[] {
   }
 
   for (const url of urls.slice(0, 3)) {
-    results.push(mockVirusTotal(url));
-    results.push(mockUrlscan(url));
-    results.push(mockSafeBrowsing(url));
-    results.push(mockAbuseIPDB(url));
+    results.push(estimateVirusTotal(url));
+    results.push(estimateUrlscan(url));
+    results.push(estimateSafeBrowsing(url));
+    results.push(estimateAbuseIPDB(url));
   }
 
   return results;

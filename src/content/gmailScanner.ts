@@ -84,28 +84,17 @@ function safeQueryAll(selectors: string[], root: ParentNode = document): string[
 
 export function checkIsSpam(): boolean {
   const hash = window.location.hash || '';
-  if (hash.includes('#spam')) {
+  if (/(^#spam\b|\/spam\/|search\/(?:in%3A|in:)spam)/i.test(hash)) {
     return true;
   }
 
-  // check page for spam warning text
   const bodyText = document.body.textContent || '';
   if (
     bodyText.includes("Why is this message in spam?") ||
-    bodyText.includes("This message is similar to messages that were identified as spam in the past")
+    bodyText.includes("This message is similar to messages that were identified as spam in the past") ||
+    bodyText.includes("This message seems dangerous")
   ) {
     return true;
-  }
-
-  // visible label text contains "Spam"
-  const labels = Array.from(document.querySelectorAll('div, span, a'));
-  for (const el of labels) {
-    if (el.textContent?.trim() === 'Spam') {
-      const rect = el.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        return true;
-      }
-    }
   }
 
   return false;
@@ -116,7 +105,6 @@ export function isGmail(): boolean {
 }
 
 export function isGmailEmailOpen(): boolean {
-  const currentUrl = window.location.href;
   const hash = window.location.hash || '';
 
   // visible subject h2.hP exists
@@ -141,10 +129,6 @@ export function isGmailEmailOpen(): boolean {
   const threadArea = document.querySelector('[role="main"]') || document.querySelector('.nH.V8dfbc');
   const hasThreadArea = !!threadArea && threadArea.getBoundingClientRect().height > 0 && threadArea.getBoundingClientRect().width > 0;
 
-  console.log("[CyberTwin] Current Gmail URL:", currentUrl);
-  console.log("[CyberTwin] Subject found:", hasSubject);
-  console.log("[CyberTwin] Body found:", hasBody);
-
   let isOpen = false;
   if (hash === '#inbox') {
     isOpen = false;
@@ -154,7 +138,6 @@ export function isGmailEmailOpen(): boolean {
     isOpen = true;
   }
 
-  console.log("[CyberTwin] Open email detected:", isOpen);
   return isOpen;
 }
 
@@ -176,8 +159,6 @@ export function extractGmailEmail(): EmailData | null {
   }
 
   if (!bodyEl) return null;
-
-  console.log("[CyberTwin] Open email body found", bodyEl);
 
   const container = bodyEl.closest('[role="listitem"]') || bodyEl.closest('.gs') || (bodyEl.parentElement as ParentNode);
 
@@ -218,11 +199,8 @@ export function extractGmailEmail(): EmailData | null {
     attachments,
     timestamp,
     pageUrl: window.location.href,
+    isSpam: checkIsSpam(),
   };
-
-  (emailData as any).isSpam = checkIsSpam();
-
-  console.log("[CyberTwin] Extracted Gmail email", emailData);
 
   return emailData;
 }
@@ -258,7 +236,7 @@ export function injectGmailScanButton(onScan: () => void): void {
     
     const btn = document.createElement('button');
     btn.id = 'cybertwin-scan-btn';
-    btn.innerHTML = '🛡️ Scan with CyberTwin AI';
+    btn.textContent = 'Scan with CyberTwin AI';
 
     btn.addEventListener('click', (e) => {
       e.preventDefault();

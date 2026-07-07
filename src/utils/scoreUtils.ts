@@ -5,8 +5,8 @@ export function clampScore(score: number): number {
 }
 
 export function scoreToLevel(score: number): RiskLevel {
-  if (score <= 30) return 'safe';
-  if (score <= 65) return 'suspicious';
+  if (score <= 39) return 'safe';
+  if (score <= 69) return 'suspicious';
   return 'dangerous';
 }
 
@@ -24,11 +24,11 @@ export function levelColor(level: RiskLevel): string {
 export function levelLabel(level: RiskLevel): string {
   switch (level) {
     case 'safe':
-      return 'Safe';
+      return 'Trusted';
     case 'suspicious':
-      return 'Suspicious';
+      return 'Needs Review';
     case 'dangerous':
-      return 'Dangerous';
+      return 'High Risk';
   }
 }
 

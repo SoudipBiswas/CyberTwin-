@@ -1,26 +1,47 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ScanResult, Settings } from '../types';
+import { PrivacyLedger } from '../components/PrivacyLedger';
 import { DEMO_CASES } from '../demo/demoCases';
 import { levelLabel } from '../utils/scoreUtils';
 import './popup.css';
+
+function getHostname(url?: string): string {
+  if (!url) return 'Current tab';
+  try {
+    return new URL(url).hostname || 'Browser page';
+  } catch {
+    return 'Browser page';
+  }
+}
 
 export function Popup() {
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(false);
   const [pageStatus, setPageStatus] = useState('Monitoring');
+  const [notice, setNotice] = useState('');
+  const isDemoScan = Boolean(scan?.demoCaseId);
+
+  const showNotice = (message: string) => {
+    setNotice(message);
+    window.setTimeout(() => setNotice(''), 2200);
+  };
 
   const loadData = useCallback(async () => {
     const [scanRes, settingsRes] = await Promise.all([
       chrome.runtime.sendMessage({ type: 'GET_LATEST_SCAN' }),
       chrome.runtime.sendMessage({ type: 'GET_SETTINGS' }),
     ]);
-    if (scanRes?.result) setScan(scanRes.result);
+    if (scanRes?.result && !scanRes.result.demoCaseId) {
+      setScan(scanRes.result);
+    } else if (scanRes?.result?.demoCaseId) {
+      setScan(null);
+    }
     if (settingsRes?.settings) setSettings(settingsRes.settings);
 
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab?.url) {
-      const host = new URL(tab.url).hostname;
+      const host = getHostname(tab.url);
       setPageStatus(host.includes('mail.google.com') ? 'Gmail — Active Monitor' : host);
     }
   }, []);
@@ -41,78 +62,32 @@ export function Popup() {
             pageData = response.result ?? response.results ?? response;
           }
         } catch (e) {
-          console.warn('Content script scan failed, using mock fallback', e);
+          console.warn('Content script scan unavailable', e);
         }
       }
 
-      let scanResult: ScanResult;
-      if (pageData && pageData.email) {
-        // Send page data to background worker for a real analysis
-        const response = await chrome.runtime.sendMessage({
-          type: 'SCAN_EMAIL',
-          payload: { email: pageData.email },
-        });
-        if (response?.success && response.result) {
-          scanResult = response.result;
-        } else {
-          throw new Error('Scan failed');
-        }
-      } else {
-        // Mock fallback for generic pages
-        scanResult = {
-          id: `scan_mock_${Date.now()}`,
-          timestamp: Date.now(),
-          email: {
-            platform: 'generic',
-            senderName: 'Generic Page Scan',
-            senderEmail: 'webpage@analyser.local',
-            senderDomain: tab?.url ? new URL(tab.url).hostname : 'webpage.local',
-            subject: tab?.title || 'Current Web Page',
-            bodyText: 'Local static content analysis of current page viewport.',
-            links: [],
-            buttons: [],
-            attachments: [],
-            timestamp: new Date().toLocaleString(),
-            pageUrl: tab?.url || '',
-          },
-          riskScore: 35,
-          riskLevel: 'safe',
-          senderTrustScore: 85,
-          findings: [],
-          topReasons: ['Secure page layout', 'No credential forms found'],
-          recommendedAction: 'Safe to proceed. Continue normal interaction.',
-          explanation: 'No immediate threats were identified on this page layout.',
-          threatIntel: [],
-          scrubbedPreview: 'Local static content...',
-          trustScore: 65,
-          subScores: {
-            identityTrust: 80,
-            intentRisk: 25,
-            manipulationRisk: 15,
-            websiteRisk: 30,
-            financialRisk: 10,
-            privacyRisk: 15,
-            confidenceScore: 70,
-          },
-          socialEngineering: {
-            urgency: 'low',
-            fear: 'low',
-            authority: 'low',
-            scarcity: 'low',
-            curiosity: 'low',
-            credentialRequests: 'low',
-            financialRequests: 'low',
-            emotionalManipulation: 'low',
-          },
-          reasoningBullets: ['No typosquatted domains detected.', 'No psychological pressure language.'],
-          linkIntel: [],
-          qrIntel: { detected: false, riskScore: 0, riskLevel: 'safe' },
-          contextualAnomalies: [],
-        };
+      if (!pageData?.email) {
+        const message = tab?.url?.includes('mail.google.com')
+          ? 'Open a Gmail email first.'
+          : 'Unsupported page';
+        setScan(null);
+        showNotice(message);
+        return;
       }
-      setScan(scanResult);
+
+      const response = await chrome.runtime.sendMessage({
+        type: 'SCAN_EMAIL',
+        payload: { email: pageData.email },
+      });
+      if (response?.success && response.result) {
+        setScan(response.result);
+      } else {
+        throw new Error(response?.error || 'Scan failed');
+      }
     } catch (err) {
-      console.error(err);
+      console.warn('[CyberTwin AI] Popup scan failed:', err);
+      setScan(null);
+      showNotice('Open a Gmail email first.');
     } finally {
       setLoading(false);
     }
@@ -122,7 +97,10 @@ export function Popup() {
     setLoading(true);
     try {
       const res = await chrome.runtime.sendMessage({ type: 'RUN_DEMO', payload: { caseId } });
-      if (res?.result) setScan(res.result);
+      if (res?.result) {
+        setScan(res.result);
+        showNotice('DEMO result shown. Not saved to real scan history.');
+      }
     } finally {
       setLoading(false);
     }
@@ -130,16 +108,24 @@ export function Popup() {
 
   const markTrusted = async () => {
     if (!scan) return;
+    if (isDemoScan) {
+      showNotice('DEMO results cannot change trust memory.');
+      return;
+    }
     await chrome.runtime.sendMessage({
       type: 'MARK_TRUSTED',
       payload: { email: scan.email.senderEmail, domain: scan.email.senderDomain },
     });
-    alert(`Added ${scan.email.senderDomain} to trusted lists.`);
+    showNotice(`Trusted ${scan.email.senderDomain}`);
   };
 
   const reportSuspicious = async () => {
+    if (isDemoScan) {
+      showNotice('DEMO results are excluded from reports.');
+      return;
+    }
     await chrome.runtime.sendMessage({ type: 'REPORT_SUSPICIOUS' });
-    alert('Reported to CyberTwin global threat intel network.');
+    showNotice('Reported locally to CyberTwin memory.');
   };
 
   const clearMemory = async () => {
@@ -175,6 +161,7 @@ export function Popup() {
           {loading ? 'ANALYZING THREAT GRID...' : '🔍 INJECT TRUST SEARCH'}
         </button>
       </section>
+      {notice && <div className="popup-notice" role="status">{notice}</div>}
 
       {scan && (
         <section className="scan-result space-y-3 animate-fade-in">
@@ -188,6 +175,7 @@ export function Popup() {
             </div>
             <div className="scan-meta">
               <div className="flex items-center gap-2">
+                {isDemoScan && <span className="demo-badge">DEMO</span>}
                 <span className={`badge-${scan.riskLevel}`}>{levelLabel(scan.riskLevel)}</span>
                 <span className="text-[10px] text-zinc-500 font-mono">Confidence: {scan.subScores?.confidenceScore ?? 50}%</span>
               </div>
@@ -199,6 +187,14 @@ export function Popup() {
               </p>
             </div>
           </div>
+
+          <PrivacyLedger ledger={scan.privacyLedger} />
+
+          {isDemoScan && (
+            <div className="demo-warning" role="status">
+              DEMO ONLY: this result is not saved to real scan history and is excluded from real scores, reports, and dashboard metrics.
+            </div>
+          )}
 
           {/* Subscores cards & progress bars */}
           <div className="glass-card p-3">
@@ -272,6 +268,65 @@ export function Popup() {
                   <li key={idx}>{bullet}</li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {scan.trustBreakdown && scan.trustBreakdown.length > 0 && (
+            <div className="trust-breakdown-section">
+              <h3>Trust Score Breakdown</h3>
+              <div className="mini-breakdown-score">
+                <strong>{scan.trustScore}</strong>
+                <span>/100 final trust</span>
+              </div>
+              <div className="mini-breakdown-list">
+                {scan.trustBreakdown.slice(0, 5).map((factor, idx) => (
+                  <div key={`${factor.label}-${idx}`} className={factor.delta >= 0 ? 'mini-factor positive' : 'mini-factor negative'}>
+                    <span>{factor.delta >= 0 ? '▲' : '▼'} {factor.delta > 0 ? '+' : ''}{factor.delta}</span>
+                    <p>{factor.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {scan.clickSimulation && (
+            <div className="what-if-section">
+              <h3>What If I Click?</h3>
+              <div className="what-if-risk">
+                <strong>{scan.clickSimulation.riskPercentage}%</strong>
+                <span>estimated risk</span>
+              </div>
+              <ol>
+                {scan.clickSimulation.steps.slice(0, 5).map((step, idx) => (
+                  <li key={`${step}-${idx}`}>{step}</li>
+                ))}
+              </ol>
+              <p>{scan.clickSimulation.recommendedAction}</p>
+            </div>
+          )}
+
+          {scan.memorySummary && (
+            <div className="memory-section">
+              <h3>CyberTwin Memory</h3>
+              <div className="memory-mini-grid">
+                <div>
+                  <span>Status</span>
+                  <strong>{scan.memorySummary.senderStatus === 'known' ? 'Known sender' : 'Never seen before'}</strong>
+                </div>
+                <div>
+                  <span>History</span>
+                  <strong>{scan.memorySummary.senderInteractions} interactions</strong>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {scan.prediction && (
+            <div className="prediction-section">
+              <h3>Likely Next Step</h3>
+              <strong>{scan.prediction.label}</strong>
+              <span>{scan.prediction.probability}% probability</span>
+              <p>{scan.prediction.reason}</p>
             </div>
           )}
 
@@ -349,10 +404,10 @@ export function Popup() {
       <section className="glass-card quick-actions">
         <h3>Quick Actions</h3>
         <div className="action-grid">
-          <button className="btn-secondary" onClick={markTrusted} disabled={!scan}>
+          <button className="btn-secondary" onClick={markTrusted} disabled={!scan || isDemoScan}>
             ✓ Trust domain
           </button>
-          <button className="btn-secondary" onClick={reportSuspicious}>
+          <button className="btn-secondary" onClick={reportSuspicious} disabled={isDemoScan}>
             ⚠ Report Phish
           </button>
           <button className="btn-secondary" onClick={openDashboard}>
@@ -373,7 +428,7 @@ export function Popup() {
         >
           {DEMO_CASES.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
+              DEMO: {c.name}
             </option>
           ))}
         </select>

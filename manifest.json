@@ -34,21 +34,14 @@
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
     "https://mail.google.com/*",
-    "https://outlook.live.com/*",
-    "https://outlook.office.com/*",
-    "https://calendar.google.com/*",
-    "https://www.linkedin.com/*",
-    "https://app.slack.com/*",
-    "https://discord.com/*",
-    "https://web.whatsapp.com/*",
-    "http://*/*",
-    "https://*/*"
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "options_page": "options.html",
   "web_accessible_resources": [
     {
       "resources": ["logo.png", "icons/*", "assets/*"],
-      "matches": ["<all_urls>"]
+      "matches": ["https://mail.google.com/*"]
     }
   ]
 }

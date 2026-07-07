@@ -74,8 +74,8 @@ export class ApiClient {
         url,
         safe: !url.includes('bit.ly') && url.startsWith('https'),
         sources: [
-          { name: 'Google Safe Browsing', status: 'mock_clean' },
-          { name: 'VirusTotal', status: 'mock_unknown' },
+          { name: 'Google Safe Browsing', status: 'local_clean_estimate' },
+          { name: 'VirusTotal', status: 'local_unknown_estimate' },
         ],
       };
     }

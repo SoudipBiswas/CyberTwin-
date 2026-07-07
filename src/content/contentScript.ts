@@ -41,12 +41,8 @@ function bindPanelEvents(): void {
     panelContainer = null;
   });
 
-  // Open dashboard when dashboard button clicked
   panelContainer.querySelector('#ct-view-dashboard')?.addEventListener('click', () => {
-    // Open the dashboard page in a new tab
-    if (chrome && chrome.tabs) {
-      chrome.tabs.create({ url: chrome.runtime.getURL('dashboard.html') });
-    }
+    window.open(chrome.runtime.getURL('dashboard.html'), '_blank', 'noopener,noreferrer');
   });
 }
 
@@ -70,6 +66,7 @@ async function runScan(): Promise<void> {
 
     if (response?.success && response.result) {
       currentScan = response.result as ScanResult;
+      applyHeatmapHighlights(currentScan);
       showPanel(false);
     } else {
       showPanel(false);
@@ -80,6 +77,68 @@ async function runScan(): Promise<void> {
   } finally {
     btn?.classList.remove('ct-scanning');
   }
+}
+
+function clearHeatmapHighlights(): void {
+  document.querySelectorAll('span.ct-heatmap-token').forEach((node) => {
+    const parent = node.parentNode;
+    if (!parent) return;
+    parent.replaceChild(document.createTextNode(node.textContent || ''), node);
+    parent.normalize();
+  });
+}
+
+function applyHeatmapHighlights(scan: ScanResult): void {
+  clearHeatmapHighlights();
+  if (!scan.heatmapHighlights?.length || !isGmail()) return;
+
+  const body = document.querySelector('.a3s.aiL, .a3s, [role="listitem"] .ii.gt, .gs .a3s');
+  if (!body) return;
+
+  const highlights = scan.heatmapHighlights
+    .filter((item) => item.text.trim().length >= 3)
+    .slice(0, 16);
+  if (highlights.length === 0) return;
+
+  const pattern = new RegExp(`\\b(${highlights.map((item) => escapeRegExp(item.text)).join('|')})\\b`, 'gi');
+  const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (!parent || parent.closest('#cybertwin-floating-panel, #cybertwin-scan-btn, script, style, textarea, input')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      pattern.lastIndex = 0;
+      return pattern.test(node.textContent || '') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    },
+  });
+
+  const nodes: Text[] = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode as Text);
+
+  for (const textNode of nodes) {
+    const text = textNode.textContent || '';
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    pattern.lastIndex = 0;
+    text.replace(pattern, (match, _capture, offset) => {
+      const highlight = highlights.find((item) => item.text.toLowerCase() === match.toLowerCase());
+      if (!highlight) return match;
+      fragment.appendChild(document.createTextNode(text.slice(lastIndex, offset)));
+      const span = document.createElement('span');
+      span.className = `ct-heatmap-token ct-heatmap-${highlight.severity}`;
+      span.title = `${highlight.category}: ${highlight.explanation}`;
+      span.textContent = match;
+      fragment.appendChild(span);
+      lastIndex = offset + match.length;
+      return match;
+    });
+    fragment.appendChild(document.createTextNode(text.slice(lastIndex)));
+    textNode.parentNode?.replaceChild(fragment, textNode);
+  }
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 if (!(window as any).__cybertwinMessageListenerInstalled) {

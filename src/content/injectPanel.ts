@@ -101,6 +101,33 @@ function getPanelHTML(
     `
     : '';
 
+  const breakdownHtml = scan.trustBreakdown && scan.trustBreakdown.length > 0
+    ? `
+      <div class="ct-breakdown">
+        <div class="ct-sub-title">Trust Score Breakdown</div>
+        ${scan.trustBreakdown.slice(0, 5).map((factor) => `
+          <div class="ct-factor ${factor.delta >= 0 ? 'ct-factor-pos' : 'ct-factor-neg'}">
+            <span>${factor.delta >= 0 ? '▲' : '▼'} ${factor.delta > 0 ? '+' : ''}${factor.delta}</span>
+            <strong>${escapeHtml(factor.label)}</strong>
+          </div>
+        `).join('')}
+      </div>
+    `
+    : '';
+
+  const clickSimulationHtml = scan.clickSimulation
+    ? `
+      <div class="ct-click-sim">
+        <div class="ct-section-title">What If I Click?</div>
+        <div class="ct-click-risk">${scan.clickSimulation.riskPercentage}% estimated risk</div>
+        <ol>
+          ${scan.clickSimulation.steps.slice(0, 4).map(step => `<li>${escapeHtml(step)}</li>`).join('')}
+        </ol>
+        <div class="ct-click-action">${escapeHtml(scan.clickSimulation.recommendedAction)}</div>
+      </div>
+    `
+    : '';
+
   // QR Warning HTML
   const qrHtml = scan.qrIntel && scan.qrIntel.detected
     ? `
@@ -173,6 +200,8 @@ function getPanelHTML(
 
       ${qrHtml}
       ${anomaliesHtml}
+      ${breakdownHtml}
+      ${clickSimulationHtml}
     `
     : '';
 
@@ -209,11 +238,14 @@ function getPanelHTML(
 
         ${reasoningHtml}
 
+        ${!expanded ? breakdownHtml : ''}
+
         <div class="ct-action">
           <strong>Recommended:</strong> ${escapeHtml(scan.recommendedAction)}
         </div>
 
         ${expandedDetailsHtml}
+        ${!expanded ? clickSimulationHtml : ''}
       </div>
     </div>
   `;
@@ -327,6 +359,25 @@ export function injectPanelStyles(): void {
     #cybertwin-floating-panel .ct-t-medium { background: rgba(249,115,22,0.08); color: #fb923c; border: 1px solid rgba(249,115,22,0.15); }
     #cybertwin-floating-panel .ct-t-high { background: rgba(239,68,68,0.08); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
 
+    #cybertwin-floating-panel .ct-breakdown { margin: 10px 0; display: flex; flex-direction: column; gap: 5px; }
+    #cybertwin-floating-panel .ct-factor {
+      display: grid; grid-template-columns: 48px 1fr; gap: 6px; align-items: center;
+      padding: 6px; border-radius: 7px; background: rgba(255,255,255,0.035);
+      font-size: 10px; font-family: monospace;
+    }
+    #cybertwin-floating-panel .ct-factor span { font-weight: 800; }
+    #cybertwin-floating-panel .ct-factor strong { color: #d4d4d8; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #cybertwin-floating-panel .ct-factor-pos span { color: #4ade80; }
+    #cybertwin-floating-panel .ct-factor-neg span { color: #fb7185; }
+    #cybertwin-floating-panel .ct-click-sim {
+      padding: 10px; border-radius: 8px; margin-top: 10px;
+      background: linear-gradient(135deg, rgba(127,29,29,0.18), rgba(8,47,73,0.12));
+      border: 1px solid rgba(239,68,68,0.22); font-family: monospace;
+    }
+    #cybertwin-floating-panel .ct-click-risk { color: #fb7185; font-weight: 800; font-size: 12px; margin-bottom: 6px; }
+    #cybertwin-floating-panel .ct-click-sim ol { margin: 0 0 8px; padding-left: 16px; color: #d4d4d8; font-size: 10px; line-height: 1.4; }
+    #cybertwin-floating-panel .ct-click-action { color: #fecaca; font-size: 10px; line-height: 1.4; }
+
     /* Warnings Alerts */
     #cybertwin-floating-panel .ct-section-title { font-size: 10px; font-weight: bold; text-transform: uppercase; color: #fb923c; margin-bottom: 6px; }
     #cybertwin-floating-panel .ct-qr-alert, 
@@ -353,6 +404,17 @@ export function injectPanelStyles(): void {
     }
     #cybertwin-scan-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(6,182,212,0.45); }
     #cybertwin-scan-btn.ct-scanning { opacity: 0.7; pointer-events: none; }
+    .ct-heatmap-token {
+      border-radius: 3px;
+      padding: 0 3px;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+      cursor: help;
+    }
+    .ct-heatmap-green { background: rgba(34,197,94,0.22); outline: 1px solid rgba(34,197,94,0.45); }
+    .ct-heatmap-yellow { background: rgba(234,179,8,0.28); outline: 1px solid rgba(234,179,8,0.48); }
+    .ct-heatmap-orange { background: rgba(249,115,22,0.28); outline: 1px solid rgba(249,115,22,0.52); }
+    .ct-heatmap-red { background: rgba(239,68,68,0.3); outline: 1px solid rgba(239,68,68,0.58); }
   `;
   document.head.appendChild(style);
 }
